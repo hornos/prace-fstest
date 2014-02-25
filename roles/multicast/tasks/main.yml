@@ -1,0 +1,25 @@
+#
+# http://stackoverflow.com/questions/14527311/routing-configuration-to-forward-multicast-traffic-to-a-single-nic-on-redhat-6
+
+- name: Enable multicast route
+  lineinfile: dest=/etc/sysconfig/network-scripts/route-{{paths[interfaces.system]}}
+              regexp='^224.0.0.0'
+              line="224.0.0.0/4 dev {{paths[interfaces.system]}}"
+              create=yes
+  when: ansible_os_family == "RedHat"
+  tags:
+    - config
+
+# http://guru.kirz.com/?p=129
+
+- name: Enable multicast route
+  lineinfile: dest=/etc/network/interfaces
+              regexp='^up route'
+              line='up route add -net 224.0.0.0/4 dev {{paths[interfaces.system]}}'
+  when: ansible_os_family == "Debian"
+  tags:
+    - config
+
+- name: Restart networking
+  service: name=network
+           state=restarted

@@ -1,0 +1,14 @@
+---
+- hosts: all
+  vars_files:
+    - group_vars/networks.yml
+    - group_vars/{{ ansible_os_family }}.yml
+    - vars/keys.yml
+  roles:
+    - { role: ntp }
+    - { role: packages }
+    - { role: dyndns }
+    - { role: network, is_sys: false }
+    - { role: newrelic }
+    - { role: ipset, is_sys: false }
+    - { role: firewall, is_sys: false, is_sysop: false, is_core: false }

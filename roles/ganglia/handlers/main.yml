@@ -1,0 +1,14 @@
+- name: Restart gmond
+  when: ansible_os_family == "RedHat"
+  service: name=gmond
+           state=restarted
+
+- name: Restart gmetad
+  when: ansible_os_family == "RedHat"
+  service: name=gmetad
+           state=restarted
+
+- name: Restart httpd
+  when: ansible_os_family == "RedHat"
+  service: name=httpd
+           state=restarted

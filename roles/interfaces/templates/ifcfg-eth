@@ -1,0 +1,10 @@
+DEVICE={{paths[interfaces.system]}}
+BOOTPROTO=none
+IPV6INIT=no
+MTU=1500
+NM_CONTROLLED=yes
+ONBOOT=yes
+TYPE=Ethernet
+NETWORK={{networks.system}}
+NETMASK={{dhcp_masks.system}}
+IPADDR={{internal_ip}}

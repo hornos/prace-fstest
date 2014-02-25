@@ -1,0 +1,3 @@
+- include: syslog.yml
+- include: loghost.yml
+- include: client.yml

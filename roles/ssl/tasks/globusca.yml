@@ -1,0 +1,84 @@
+- name: Root bin dir
+  file: path=/root/bin
+        state=directory
+
+- name: Create CA dirs
+  file: path=/etc/grid-security
+        state=directory
+
+- name: Create CA dirs
+  file: path=/etc/grid-security/certificates
+        state=directory
+
+- name: Download CAs
+  copy: src=ca/globus_simple_ca_{{item}}.tar.gz
+        dest=/root/globus_simple_ca_{{item}}.tar.gz
+        owner=root
+        group=root
+        mode=0600
+  with_items: globus_cas
+  tags:
+    - packages
+    - ca
+
+- name: Install CAs
+  shell: tar xvz --strip-components 1 -C /etc/grid-security/certificates -f /root/globus_simple_ca_{{item}}.tar.gz
+  with_items: globus_cas
+  tags:
+    - packages
+    - ca
+
+- name: Download defaultca
+  copy: src=ca/globus_simple_ca_{{default_ca}}.tar.gz
+        dest=/root/globus_simple_ca_{{default_ca}}.tar.gz
+        owner=root
+        group=root
+        mode=0600
+  tags:
+    - packages
+    - ca
+
+- name: Install defaultca
+  shell: tar xvz --strip-components 1 -C /etc/grid-security/certificates -f /root/globus_simple_ca_{{default_ca}}.tar.gz
+  tags:
+    - packages
+    - ca
+
+- name: Install /etc/grid-security/hostcert.pem
+  copy: src=ca/{{default_ca}}/grid-security/{{inventory_hostname}}_cert.pem
+        dest=/etc/grid-security/hostcert.pem
+        owner=root
+        group=root
+        mode=0644
+  tags:
+    - cert
+    - config
+
+- name: Install /etc/grid-security/hostkey.pem
+  copy: src=ca/{{default_ca}}/grid-security/{{inventory_hostname}}_key.pem
+        dest=/etc/grid-security/hostkey.pem
+        owner=root
+        group=root
+        mode=0600
+  tags:
+    - key
+    - config
+
+- name: Link default CA
+  file: src=/etc/grid-security/certificates/{{default_ca}}.0
+        dest=/etc/grid-security/cacert.pem
+        state=link
+  tags:
+    - config
+    - link
+
+- name: Install Grid tools
+  template: src={{item}}.j2
+            dest=/root/bin/{{item}}
+            owner=root
+            group=root
+            mode=0755
+  with_items:
+    - check_grid
+    - enable_grid_cert
+

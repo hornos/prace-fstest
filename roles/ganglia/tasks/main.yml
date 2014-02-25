@@ -1,0 +1,224 @@
+#
+# Ganglia cluster monitor
+#
+# http://vuksan.com/centos/RPMS/x86_64/
+#
+# rollback:
+# --extra-vars "rollback=yes"
+#
+# latest version repo bug
+# http://vuksan.com/centos/RPMS-6/x86_64/ganglia-devel-3.6.0-1.x86_64.rpm
+# http://vuksan.com/centos/RPMS-6/x86_64/ganglia-gmetad-3.6.0-1.x86_64.rpm
+# http://vuksan.com/centos/RPMS-6/x86_64/ganglia-gmond-3.6.0-1.x86_64.rpm
+# http://vuksan.com/centos/RPMS-6/x86_64/ganglia-gmond-modules-python-3.6.0-1.x86_64.rpm
+# http://vuksan.com/centos/RPMS-6/x86_64/libganglia-3.6.0-1.x86_64.rpm
+#
+# TODO: gmetad rrd ntpd update problem
+# TODO: ganglia-web
+#
+# local repo: http://www.unix.com/unix-advanced-expert-users/187517-how-install-rpm-file-directory-using-yum.html
+#
+
+- name: Install packages
+  yum: name={{item}}
+       state=installed
+  with_items:
+    - createrepo
+    - php
+    - php-mysql
+    - php-devel
+    - php-gd
+    - php-pecl-memcache
+    - php-pspell
+    - php-snmp
+    - php-xmlrpc
+    - php-xml
+  tags:
+    - packages
+
+- name: Install repo fix script
+  template: src=ganglia_local_repo.j2
+            dest=/root/ganglia_local_repo
+            mode=0750
+  when: ansible_os_family == "RedHat"
+  tags:
+    - packages
+    - fix
+
+- name: Run fix script
+  shell: /root/ganglia_local_repo
+  when: ansible_os_family == "RedHat"
+  tags:
+    - packages
+    - fix
+
+- name: Install local Ganglia repo
+  template: src=ganglia.repo.j2
+            dest=/etc/yum.repos.d/ganglia.repo
+  when: ansible_os_family == "RedHat"
+  tags:
+    - packages
+    - fix
+
+- name: Install packages
+  yum: name={{item}}
+       state=latest
+  with_items:
+    - ganglia-devel
+    - ganglia-gmetad
+    - ganglia-gmond
+    - ganglia-gmond-modules-python
+    - libganglia
+  when: ansible_os_family == "RedHat"
+  tags:
+    - packages
+
+# TODO: from rpm
+### Ganglia web
+- name: Install ganglia-web
+  git: repo=https://github.com/ganglia/ganglia-web.git
+       dest=/var/www/html/ganglia
+  when: ansible_os_family == "RedHat"
+  tags:
+    - packages
+    - web
+
+- name: Fix permissions
+  file: path=/var/www/html/ganglia
+
+### CONFIGURATION
+- name: Ganglia monitor
+  template: src=gmond.conf.j2
+            dest=/etc/ganglia/gmond.conf
+            owner=root
+            group=root
+            mode=0644
+            backup=yes
+  notify:
+    - Restart gmond
+  tags:
+    - config
+
+- name: Ganglia metadata
+  template: src=gmetad.conf.j2
+            dest=/etc/ganglia/gmetad.conf
+            owner=root
+            group=root
+            mode=0644
+            backup=yes
+  notify:
+    - Restart gmetad
+  tags:
+    - config
+
+### FIX
+- name: Disable netstats
+  file: path=/etc/ganglia/conf.d/netstats.pyconf
+        state=absent
+        backup=yes
+  tags:
+    - fix
+    - netstats
+  notify:
+    - Restart gmond
+
+- name: Set rrds mode
+  file: path=/var/lib/ganglia/rrds/
+        state=directory
+        recurse=yes
+        owner=nobody
+        group=nobody
+  when: ansible_os_family == "RedHat"
+  tags:
+    - perm
+
+- name: Enable Ganglia web interface
+  template: src=httpd-ganglia.conf.j2
+            dest=/etc/httpd/conf.d/ganglia.conf
+            owner=root
+            group=root
+            mode=0644
+  notify:
+    - Restart httpd
+  tags:
+    - config
+
+# TODO: web interface configuration
+- name: Create dwoo directories
+  file: path=/var/lib/ganglia/{{item}}
+        state=directory
+        owner=apache
+  with_items:
+    - dwoo/cache
+    - dwoo/compiled
+    - conf
+  when: ansible_os_family == "RedHat"
+  tags:
+    - config
+    - gweb
+
+- name: Install gweb config
+  template: src=conf_default.php.j2
+            dest=/var/www/html/ganglia/conf_default.php
+            backup=yes
+            mode=0644
+  when: ansible_os_family == "RedHat"
+  tags:
+    - config
+    - gweb
+
+- name: Fix Ganglia view
+  lineinfile: dest=/var/www/html/ganglia/conf_default.php
+              regexp="'optional_graphs'"
+              line="$conf['optional_graphs'] = array('cpu','load','mem','network');"
+              insertafter="#\$conf\['optional_graphs'"
+  when: ansible_os_family == "RedHat"
+  tags:
+    - view
+
+- name: Enable gmond service
+  lineinfile: dest=/etc/services
+              regexp="^gmond 8649/{{item}}"
+              line="gmond 8649/{{item}}"
+  with_items:
+   - tcp
+   - udp
+  tags:
+    - config
+    - services
+
+- name: Enable gmetad-xml service
+  lineinfile: dest=/etc/services
+              regexp="^gmetad-xml 8651/{{item}}"
+              line="gmetad-xml 8651/{{item}}"
+  with_items:
+   - tcp
+   - udp
+  tags:
+    - config
+    - services
+
+- name: Enable gmetad-int service
+  lineinfile: dest=/etc/services
+              regexp="^gmetad-int 8652/{{item}}"
+              line="gmetad-int 8652/{{item}}"
+  with_items:
+   - tcp
+   - udp
+  tags:
+    - config
+    - services
+
+
+- name: Start gmond
+  service: name=gmond
+           state=started
+           enabled=yes
+  when: ansible_os_family == "RedHat"
+
+- name: Start gmetad
+  service: name=gmetad
+           state=started
+           enabled=yes
+  when: ansible_os_family == "RedHat"
+

@@ -1,0 +1,4 @@
+globus_cas:
+  - 695e84e6
+  - edffa4b7
+default_ca: "695e84e6"

@@ -1,0 +1,14 @@
+# Open UDP
+source loghost_src_udp {
+  udp( ip(0.0.0.0) port(514) );
+};
+
+# Destination log file
+destination loghost_dst_udp {
+  file("/var/log/loghost/$FULLHOST/$YEAR/$MONTH/$DAY/messages");
+};
+
+log {
+  source(loghost_src_udp);
+  destination(loghost_dst_udp);
+};

@@ -1,0 +1,39 @@
+
+- name: Install packages
+  yum: name={{item}}
+       state=installed
+  with_items:
+    - mod_ssl
+    - screen
+  when: ansible_os_family == "RedHat"
+  tags:
+    - packages
+
+- name: Install htpasswd
+  copy: src=htpasswd
+        dest=/etc/httpd/htpasswd
+
+- name: Install htaccess
+  copy: src=htaccess
+        dest=/var/www/html/.htaccess
+
+- name: Install SSL configuration
+  template: src=ssl.conf.j2
+            dest=/etc/httpd/conf.d/ssl.conf
+            owner=root
+            group=root
+            mode=0644
+            backup=yes
+  when: ansible_os_family == "RedHat"
+  tags:
+    - config
+  notify:
+    - Restart httpd
+
+
+- name: Enable firewall
+  template: src=ssl.j2
+            dest=/etc/shorewall/rules.d/ssl
+  notify:
+    - Restart shorewall
+

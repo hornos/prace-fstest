@@ -1,0 +1,24 @@
+#ZONE      INTERFACE     BROADCAST     OPTIONS
+# system network for inter node communications
+# ,tcpflags,nosmurfs,routefilter,logmartians,upnpclient
+
+{% if not is_sys %}
+ext        {{interfaces.nosys}} detect dhcp
+{% else %}
+
+## system
+sys        {{paths[interfaces.system]}}
+
+## external network (internet)
+## mind paths for bonding!
+
+ext        {{paths[interfaces.external]}} detect dhcp
+
+{% endif %}
+
+# TODO: extend interfaces in each playbook
+
+## openvpn tunnel
+vpn        tun+
+
+#LAST LINE -- ADD YOUR ENTRIES BEFORE THIS ONE -- DO NOT REMOVE

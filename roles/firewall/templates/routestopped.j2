@@ -1,0 +1,10 @@
+###############################################################################
+#INTERFACE	HOST(S)			OPTIONS		PROTO	DEST	SOURCE
+#								PORT(S)	PORT(S)
+# SSH should always go
+{{paths[interfaces.external]}} - - TCP 22
+
+{% if is_sys %}
+{{paths[interfaces.system]}}   -               -               TCP     22
+{% endif %}
+#LAST LINE -- ADD YOUR ENTRIES BEFORE THIS ONE -- DO NOT REMOVE

@@ -1,0 +1,11 @@
+- name: Enable system network
+  template: src=ifcfg-eth
+            dest=/etc/sysconfig/network-scripts/ifcfg-{{paths[interfaces.system]}}
+            backup=yes
+  tags:
+    - interfaces
+
+- name: Restart network
+  service: name=network
+           state=restarted
+
