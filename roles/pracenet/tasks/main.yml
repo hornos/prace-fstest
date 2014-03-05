@@ -1,0 +1,75 @@
+- name: Enable prace network
+  template: src=ifcfg-eth.j2
+            dest=/etc/sysconfig/network-scripts/ifcfg-{{paths[interfaces.prace]}}
+            backup=yes
+  tags:
+    - interfaces
+
+- name: Enable route
+  template: src=route-eth.j2
+            dest=/etc/sysconfig/network-scripts/route-{{paths[interfaces.prace]}}
+            backup=yes
+  tags:
+    - interfaces
+
+- name: Restart network
+  service: name=network
+           state=restarted
+
+- name: Install zones
+  template: src=zone-{{item}}.j2
+            dest=/etc/shorewall/zones.d/{{item}}
+            owner=root
+            group=root
+            mode=0640
+            backup=yes
+  with_items:
+    - core
+  tags:
+    - zones
+  notify:
+    - Restart shorewall
+
+
+- name: Install rules
+  template: src=rule-{{item}}.j2
+            dest=/etc/shorewall/rules.d/{{item}}
+            owner=root
+            group=root
+            mode=0640
+            backup=yes
+  with_items:
+    - prace
+  tags:
+    - rules
+  notify:
+    - Restart shorewall
+
+- name: Install policies
+  template: src=policy-{{item}}.j2
+            dest=/etc/shorewall/policy.d/{{item}}
+            owner=root
+            group=root
+            mode=0640
+  with_items:
+    - core
+  tags:
+    - policy
+  notify:
+    - Restart shorewall
+
+
+### CONFIGURATION
+- name: Install other configurations
+  template: src={{item}}.j2
+            dest=/etc/shorewall/{{item}}
+            owner=root
+            group=root
+            mode=0640
+            backup=yes
+  with_items:
+    - interfaces
+  tags:
+    - config
+  notify:
+    - Restart shorewall

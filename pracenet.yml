@@ -1,0 +1,8 @@
+---
+- hosts: all
+  vars_files:
+    - group_vars/networks.yml
+    - group_vars/{{ ansible_os_family }}.yml
+    - vars/{{inventory_hostname}}.yml
+  roles:
+    - { role: pracenet, is_sys: true, is_sysop: false, is_core: false }

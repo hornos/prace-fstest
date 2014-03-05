@@ -1,0 +1,47 @@
+
+- name: Create ceph directories
+  file: path={{item}}
+        state=directory
+  with_items:
+    - /var/lib/ceph
+    - /etc/ceph
+  tags:
+    - directories
+
+- name: Copy initial cluster config
+  template: src=ceph.conf.j2
+            dest=/etc/ceph/ceph.conf
+
+- name: Create monitor directory
+  file: path=/var/lib/ceph/mon/ceph-{{inventory_hostname}}
+        state=directory
+  tags:
+    - directories
+
+# http://cephnotes.ksperis.com/blog/2013/08/29/mon-failed-to-start
+
+- name: Fix sysvinit
+  copy: content=''
+        dest=/var/lib/ceph/mon/ceph-{{inventory_hostname}}/sysvinit
+  tags:
+    - init
+
+- name: Copy auth files
+  copy: src={{item}}
+        dest=/etc/ceph/{{item}}
+  with_items:
+    - ceph.client.admin.keyring
+    - ceph.mon.keyring
+    - monmap
+  tags:
+    - auth
+
+- name: Copy scripts
+  copy: src={{item}}
+        dest=/root/{{item}}
+        mode=0755
+  with_items:
+    - ceph_monitor_reset.sh
+    - ceph_monitor_service.sh
+  tags:
+    - scripts

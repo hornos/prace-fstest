@@ -50,7 +50,13 @@ inventory/*
 roles/template/files/rpms/*
 roles/template/files/debs/*
 roles/ssl/files/*
+roles/pracenet/templates/route*
+roles/btsync/vars/*
+roles/ceph/files/*
+roles/ceph/vars/*
+group_vars/networks.yml
 ansible/roles/*
 parallel-ssh
 vars/*
 dnssec/*
+public/*

@@ -1,0 +1,54 @@
+- name: Create btsync user
+  user: name=btsync
+
+- name: Create btsync directories
+  file: path={{item}}
+        state=directory
+        owner=btsync
+  with_items:
+    - /opt/btsync
+    - /opt/btsync/public
+    - /var/run/btsync
+
+- name: Download btsync
+  get_url: url="http://download-lb.utorrent.com/endpoint/btsync/os/linux-glibc23-x64/track/stable"
+           dest=/opt/btsync/btsync.tgz
+  tags:
+    - download
+
+- name: Extract btsync
+  shell: cd /opt/btsync; tar xvzf btsync.tgz
+
+- name: Install config
+  template: src=btsync.conf.j2
+            dest=/opt/btsync/btsync.conf
+
+- name: Install init script
+  template: src=btsync.j2
+            dest=/etc/init.d/btsync
+            mode=0755
+
+- name: Fix permissions
+  file: path=/opt/btsync
+        owner=btsync
+        recurse=yes
+
+- name: Install rules
+  template: src=rule-{{item}}.j2
+            dest=/etc/shorewall/rules.d/{{item}}
+            owner=root
+            group=root
+            mode=0640
+  with_items:
+    - btsync
+  tags:
+    - rules
+  notify:
+    - Restart shorewall
+
+
+- name: Enable btsync service
+  service: name=btsync
+           state=restarted
+           enabled=yes
+

@@ -1,0 +1,12 @@
+
+- name: Install packages
+  yum: name={{item}}
+       state=installed
+  with_items:
+    - ceph-deploy
+    - snappy
+    - leveldb
+    - gdisk
+    - python-argparse
+    - gperftools-libs
+    - ceph
