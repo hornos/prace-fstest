@@ -1,8 +1,11 @@
+PRACE FStech
+------------
 
-    flock2 command @@fstest curl -s http://ifconfig.me/all
-    flock2 command @@fstest /etc/sysconfig/network-scripts/ifup-eth0
+This is a blueprint for FStech sub-task.
 
-Ground state:
+# Installation
+
+After templating the VMs reach the ground state:
 
     flock2 ping @@fstest
     flock2 play @@fstest ground --extra-vars=\"domain=dyn.ki.iif.hu server=hufu.ki.iif.hu\"
@@ -15,7 +18,7 @@ Modify firewall for the internal network (hosts,multicast):
 
     flock2 play @@fstest system
 
-Enable syslog cluster logging (TBD: multicast):
+Enable syslog cluster logging:
 
     flock2 play @@fstest syslog
 
@@ -42,18 +45,15 @@ Enable btsync file sharing:
 
     flock2 play @@fstest btsync
 
-# CEPH
+## CEPH
+
+Enable Ceph repository:
 
     flock2 play @@fstest ceph-repo
 
-Node allocations:
+### Ceph Manual Installation
 
-    core-01       : mon, MDS (admin node)
-    core-0{2,3,4} : mon, OSD
-
-## Ceph Manual Installation
-
-### Monitors
+#### Monitors
 
 Generate an `fsid` and put into the vars file:
 
@@ -91,33 +91,22 @@ Check monitor states:
     ceph osd lspools
     ceph -s
 
-### OSDs
+#### OSDs
 
+Create OSD partitions:
 
+    ssh core-02 ceph-disk prepare --cluster ceph --cluster-uuid e99c8ce3-598b-42d0-9e12-d2708ea11901 --fs-type ext4 /dev/xvdb
+    ssh core-03 ceph-disk prepare --cluster ceph --cluster-uuid e99c8ce3-598b-42d0-9e12-d2708ea11901 --fs-type ext4 /dev/xvdb
+    ssh core-04 ceph-disk prepare --cluster ceph --cluster-uuid e99c8ce3-598b-42d0-9e12-d2708ea11901 --fs-type ext4 /dev/xvdb
 
-## Ceph Auto Installation (Failed)
+Activate OSDs:
 
-    flock2 ssh @@core-01
-    cd /opt
-    mkdir ceph-01
-    ceph-deploy new core-01
+    ssh core-02 ceph-disk activate /dev/xvdb
+    ssh core-03 ceph-disk activate /dev/xvdb
+    ssh core-04 ceph-disk activate /dev/xvdb
 
-Edit `ceph.conf` and add [public and cluster network](http://ceph.com/docs/master/rados/configuration/network-config-ref/):
+## Misc
 
-    [global]
-      public network = {public-network/netmask}
-      cluster network = {cluster-network/netmask}
+    flock2 command @@fstest curl -s http://ifconfig.me/all
+    flock2 command @@fstest /etc/sysconfig/network-scripts/ifup-eth0
 
-Install Ceph (optional):
-
-    ceph-deploy install core-01
-
-Start the monitor:
-
-    ceph-deploy mon create-initial
-
-Add the first OSD:
-
-    ceph-deploy mon create core-02
-    ceph-deploy disk zap core-02:xvdb
-    ceph-deploy osd prepare core-02:xvdb

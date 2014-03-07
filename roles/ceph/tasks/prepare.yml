@@ -5,6 +5,7 @@
   with_items:
     - /var/lib/ceph
     - /etc/ceph
+    - /var/lib/ceph/tmp
   tags:
     - directories
 
